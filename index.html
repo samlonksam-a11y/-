@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق طلبات المطعم</title>
+    <meta name="description" content="تطبيق طلبات المطعم عبر الإنترنت مع لوحة تحكم للمسؤول">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#FF6B6B",
+                        secondary: "#4ECDC4",
+                        dark: "#1A1A2E",
+                        light: "#F5F5F5"
+                    },
+                    fontFamily: {
+                        arabic: ["Tajawal", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-dark text-gray-800 dark:text-gray-200">
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Navigation -->
+        <nav class="bg-primary dark:bg-gray-900 text-white p-4 shadow-md">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold" id="app-title">مطعمنا</h1>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-white hover:bg-opacity-20">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    <button id="login-btn" class="px-4 py-2 bg-white text-primary rounded-lg font-medium hover:bg-opacity-90">
+                        تسجيل الدخول
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto p-4">
+            <!-- Login/Register Modal -->
+            <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold" id="modal-title">تسجيل الدخول</h2>
+                            <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="login-form">
+                            <div class="mb-4">
+                                <label for="username" class="block mb-2">اسم المستخدم</label>
+                                <input type="text" id="username" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="mb-4">
+                                <label for="password" class="block mb-2">كلمة المرور</label>
+                                <input type="password" id="password" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <button id="submit-login" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-opacity-90 mb-2">
+                                دخول
+                            </button>
+                            <p class="text-center">
+                                ليس لديك حساب؟ <button id="switch-to-register" class="text-primary font-medium">إنشاء حساب</button>
+                            </p>
+                        </div>
+                        
+                        <div id="register-form" class="hidden">
+                            <div class="mb-4">
+                                <label for="new-username" class="block mb-2">اسم المستخدم</label>
+                                <input type="text" id="new-username" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="mb-4">
+                                <label for="new-password" class="block mb-2">كلمة المرور</label>
+                                <input type="password" id="new-password" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <button id="submit-register" class="w-full bg-secondary text-white py-2 rounded-lg hover:bg-opacity-90 mb-2">
+                                إنشاء حساب
+                            </button>
+                            <p class="text-center">
+                                لديك حساب بالفعل؟ <button id="switch-to-login" class="text-primary font-medium">تسجيل الدخول</button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Panel (Hidden by default) -->
+            <div id="admin-panel" class="hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">لوحة التحكم</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- App Settings -->
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="font-bold mb-3">إعدادات التطبيق</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">اسم التطبيق</label>
+                                <input type="text" id="app-name" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">خلفية التطبيق</label>
+                                <div class="flex space-x-2 space-x-reverse mb-2">
+                                    <button id="bg-color" class="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded-lg">لون</button>
+                                    <button id="bg-image" class="px-3 py-1 bg-gray-200 dark:bg-gray-600 rounded-lg">صورة</button>
+                                </div>
+                                
+                                <div id="color-options" class="hidden grid grid-cols-5 gap-2 mb-2">
+                                    <div class="h-8 rounded cursor-pointer bg-red-500" data-color="bg-red-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-blue-500" data-color="bg-blue-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-green-500" data-color="bg-green-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-yellow-500" data-color="bg-yellow-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-purple-500" data-color="bg-purple-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-pink-500" data-color="bg-pink-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-indigo-500" data-color="bg-indigo-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-gray-500" data-color="bg-gray-500"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-black" data-color="bg-black"></div>
+                                    <div class="h-8 rounded cursor-pointer bg-white border" data-color="bg-white"></div>
+                                </div>
+                                
+                                <div id="image-upload" class="hidden">
+                                    <input type="file" id="bg-file" accept="image/*" class="hidden">
+                                    <label for="bg-file" class="block p-2 border border-dashed rounded-lg text-center cursor-pointer">
+                                        <i class="fas fa-upload mb-1"></i>
+                                        <span>اختر صورة</span>
+                                    </label>
+                                    <div id="image-preview" class="mt-2 hidden">
+                                        <img id="preview-img" src="" alt="Preview" class="max-h-32 mx-auto">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">رقم واتساب للطلبات</label>
+                                <input type="text" id="whatsapp-number" placeholder="مثال: 966501234567" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                            </div>
+                            
+                            <button id="save-settings" class="w-full bg-primary text-white py-2 rounded-lg hover:bg-opacity-90">
+                                حفظ الإعدادات
+                            </button>
+                        </div>
+                        
+                        <!-- Menu Management -->
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="font-bold mb-3">إدارة القائمة</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">اسم الوجبة</label>
+                                <input type="text" id="meal-name" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">سعر الوجبة</label>
+                                <input type="number" id="meal-price" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block mb-2">صورة الوجبة</label>
+                                <input type="file" id="meal-image" accept="image/*" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                            </div>
+                            
+                            <div class="flex space-x-2 space-x-reverse">
+                                <button id="add-meal" class="flex-grow bg-secondary text-white py-2 rounded-lg hover:bg-opacity-90">
+                                    إضافة وجبة
+                                </button>
+                                <button id="clear-meal" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg">
+                                    مسح
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4">قائمة الطعام</h2>
+                    <div id="menu-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Meals will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer View -->
+            <div id="customer-view">
+                <h2 class="text-2xl font-bold mb-6 text-center">قائمة الطعام</h2>
+                
+                <div id="customer-menu" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Meals will be added here dynamically -->
+                </div>
+                
+                <div id="cart-section" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 border border-gray-200 dark:border-gray-700 hidden">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold">سلة الطلبات</h3>
+                        <button id="close-cart" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="cart-items" class="max-h-64 overflow-y-auto mb-3">
+                        <!-- Cart items will be added here -->
+                    </div>
+                    
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="font-bold">المجموع:</span>
+                        <span id="cart-total" class="font-bold">0 ر.س</span>
+                    </div>
+                    
+                    <button id="checkout-btn" class="w-full mt-3 bg-primary text-white py-2 rounded-lg hover:bg-opacity-90">
+                        إتمام الطلب عبر واتساب
+                    </button>
+                </div>
+                
+                <button id="cart-btn" class="fixed bottom-4 right-4 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-opacity-90">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="bg-gray-200 dark:bg-gray-900 p-4 mt-8">
+            <div class="container mx-auto text-center">
+                <p>© 2023 مطعمنا. جميع الحقوق محفوظة.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // App Data
+        const appData = {
+            title: "مطعمنا",
+            bgType: "color",
+            bgValue: "bg-gray-100",
+            whatsappNumber: "",
+            darkMode: false,
+            menu: [
+                {
+                    id: 1,
+                    name: "برجر لحم",
+                    price: 25,
+                    image: "https://picsum.photos/300/200?random=1"
+                },
+                {
+                    id: 2,
+                    name: "بيتزا",
+                    price: 35,
+                    image: "https://picsum.photos/300/200?random=2"
+                },
+                {
+                    id: 3,
+                    name: "سلطة",
+                    price: 15,
+                    image: "https://picsum.photos/300/200?random=3"
+                }
+            ]
+        };
+
+        // Cart Data
+        let cart = [];
+        
+        // DOM Elements
+        const authModal = document.getElementById('auth-modal');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginBtn = document.getElementById('login-btn');
+        const closeModal = document.getElementById('close-modal');
+        const switchToRegister = document.getElementById('switch-to-register');
+        const switchToLogin = document.getElementById('switch-to-login');
+        const submitLogin = document.getElementById('submit-login');
+        const submitRegister = document.getElementById('submit-register');
+        const adminPanel = document.getElementById('admin-panel');
+        const customerView = document.getElementById('customer-view');
+        const themeToggle = document.getElementById('theme-toggle');
+        const appTitle = document.getElementById('app-title');
+        
+        // Admin Elements
+        const appNameInput = document.getElementById('app-name');
+        const bgColorBtn = document.getElementById('bg-color');
+        const bgImageBtn = document.getElementById('bg-image');
+        const colorOptions = document.getElementById('color-options');
+        const imageUpload = document.getElementById('image-upload');
+        const bgFileInput = document.getElementById('bg-file');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const whatsappNumberInput = document.getElementById('whatsapp-number');
+        const saveSettingsBtn = document.getElementById('save-settings');
+        const mealNameInput = document.getElementById('meal-name');
+        const mealPriceInput = document.getElementById('meal-price');
+        const mealImageInput = document.getElementById('meal-image');
+        const addMealBtn = document.getElementById('add-meal');
+        const clearMealBtn = document.getElementById('clear-meal');
+        const menuList = document.getElementById('menu-list');
+        
+        // Customer Elements
+        const customerMenu = document.getElementById('customer-menu');
+        const cartSection = document.getElementById('cart-section');
+        const cartItems = document.getElementById('cart-items');
+        const cartTotal = document.getElementById('cart-total');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const cartBtn = document.getElementById('cart-btn');
+        const cartCount = document.getElementById('cart-count');
+        const closeCart = document.getElementById('close-cart');
+        
+        // Initialize App
+        function initApp() {
+            // Load saved data from localStorage
+            const savedData = localStorage.getItem('restaurantAppData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                Object.assign(appData, parsedData);
+            }
+            
+            // Apply settings
+            appTitle.textContent = appData.title;
+            document.body.className = `${appData.bgValue} dark:bg-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col`;
+            
+            if (appData.darkMode) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Render menu
+            renderMenu();
+            
+            // Check if admin is logged in
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            if (isAdmin) {
+                showAdminPanel();
+            }
+        }
+        
+        // Render Menu
+        function renderMenu() {
+            // Clear existing menu
+            menuList.innerHTML = '';
+            customerMenu.innerHTML = '';
+            
+            // Render for admin
+            appData.menu.forEach(meal => {
+                const mealCard = createMealCard(meal, true);
+                menuList.appendChild(mealCard);
+            });
+            
+            // Render for customer
+            appData.menu.forEach(meal => {
+                const mealCard = createMealCard(meal, false);
+                customerMenu.appendChild(mealCard);
+            });
+        }
+        
+        // Create Meal Card
+        function createMealCard(meal, isAdmin) {
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden';
+            
+            card.innerHTML = `
+                <img src="${meal.image}" alt="${meal.name}" class="w-full h-48 object-cover" loading="lazy">
+                <div class="p-4">
+                    <h3 class="font-bold text-lg mb-1">${meal.name}</h3>
+                    <p class="text-primary font-bold mb-3">${meal.price} ر.س</p>
+                    ${isAdmin ? `
+                        <div class="flex space-x-2 space-x-reverse">
+                            <button class="edit-meal px-3 py-1 bg-yellow-500 text-white rounded-lg text-sm" data-id="${meal.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-meal px-3 py-1 bg-red-500 text-white rounded-lg text-sm" data-id="${meal.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    ` : `
+                        <button class="add-to-cart w-full bg-primary text-white py-2 rounded-lg hover:bg-opacity-90" data-id="${meal.id}">
+                            أضف إلى السلة
+                        </button>
+                    `}
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Show Admin Panel
+        function showAdminPanel() {
+            adminPanel.classList.remove('hidden');
+            customerView.classList.add('hidden');
+            loginBtn.textContent = 'تسجيل الخروج';
+            
+            // Fill admin form with current data
+            appNameInput.value = appData.title;
+            whatsappNumberInput.value = appData.whatsappNumber;
+        }
+        
+        // Hide Admin Panel
+        function hideAdminPanel() {
+            adminPanel.classList.add('hidden');
+            customerView.classList.remove('hidden');
+            loginBtn.textContent = 'تسجيل الدخول';
+            localStorage.removeItem('isAdmin');
+        }
+        
+        // Update Cart
+        function updateCart() {
+            cartItems.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach(item => {
+                const meal = appData.menu.find(m => m.id === item.id);
+                if (meal) {
+                    total += meal.price * item.quantity;
+                    
+                    const cartItem = document.createElement('div');
+                    cartItem.className = 'flex justify-between items-center py-2 border-b';
+                    cartItem.innerHTML = `
+                        <div>
+                            <h4 class="font-medium">${meal.name}</h4>
+                            <p class="text-sm text-gray-500">${meal.price} ر.س × ${item.quantity}</p>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <button class="decrease-quantity px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded" data-id="${meal.id}">
+                                <i class="fas fa-minus text-xs"></i>
+                            </button>
+                            <span>${item.quantity}</span>
+                            <button class="increase-quantity px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded" data-id="${meal.id}">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    `;
+                    cartItems.appendChild(cartItem);
+                }
+            });
+            
+            cartTotal.textContent = `${total} ر.س`;
+            cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            if (cart.length > 0) {
+                cartCount.classList.remove('hidden');
+            } else {
+                cartCount.classList.add('hidden');
+            }
+        }
+        
+        // Event Listeners
+        loginBtn.addEventListener('click', () => {
+            if (loginBtn.textContent === 'تسجيل الخروج') {
+                hideAdminPanel();
+            } else {
+                authModal.classList.remove('hidden');
+            }
+        });
+        
+        closeModal.addEventListener('click', () => {
+            authModal.classList.add('hidden');
+        });
+        
+        switchToRegister.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            document.getElementById('modal-title').textContent = 'إنشاء حساب';
+        });
+        
+        switchToLogin.addEventListener('click', () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            document.getElementById('modal-title').textContent = 'تسجيل الدخول';
+        });
+        
+        submitLogin.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'admin' && password === 'admin123') {
+                localStorage.setItem('isAdmin', 'true');
+                authModal.classList.add('hidden');
+                showAdminPanel();
+            } else {
+                // For customers, any credentials work
+                authModal.classList.add('hidden');
+                alert('مرحباً بك! يمكنك الآن طلب الطعام');
+            }
+        });
+        
+        submitRegister.addEventListener('click', () => {
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-password').value;
+            
+            if (username && password) {
+                authModal.classList.add('hidden');
+                alert('تم إنشاء حسابك بنجاح! يمكنك الآن طلب الطعام');
+            } else {
+                alert('الرجاء إدخال اسم مستخدم وكلمة مرور');
+            }
+        });
+        
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            appData.darkMode = !appData.darkMode;
+            saveAppData();
+        });
+        
+        // Admin Event Listeners
+        bgColorBtn.addEventListener('click', () => {
+            appData.bgType = 'color';
+            colorOptions.classList.remove('hidden');
+            imageUpload.classList.add('hidden');
+            imagePreview.classList.add('hidden');
+        });
+        
+        bgImageBtn.addEventListener('click', () => {
+            appData.bgType = 'image';
+            colorOptions.classList.add('hidden');
+            imageUpload.classList.remove('hidden');
+        });
+        
+        // Color selection
+        document.querySelectorAll('#color-options > div').forEach(color => {
+            color.addEventListener('click', () => {
+                const colorClass = color.getAttribute('data-color');
+                document.body.className = `${colorClass} dark:bg-dark text-gray-800 dark:text-gray-200 min-h-screen flex flex-col`;
+                appData.bgValue = colorClass;
+            });
+        });
+        
+        // Image upload
+        bgFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    previewImg.src = event.target.result;
+                    imagePreview.classList.remove('hidden');
+                    
+                    // For demo, we'll just store the image URL
+                    // In a real app, you would upload this to a server
+                    appData.bgValue = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        saveSettingsBtn.addEventListener('click', () => {
+            appData.title = appNameInput.value;
+            appData.whatsappNumber = whatsappNumberInput.value;
+            
+            appTitle.textContent = appData.title;
+            saveAppData();
+            
+            alert('تم حفظ الإعدادات بنجاح');
+        });
+        
+        addMealBtn.addEventListener('click', () => {
+            const name = mealNameInput.value;
+            const price = parseFloat(mealPriceInput.value);
+            const imageFile = mealImageInput.files[0];
+            
+            if (!name || !price || !imageFile) {
+                alert('الرجاء إدخال جميع بيانات الوجبة');
+                return;
+            }
+            
+            // For demo, we'll use a placeholder image
+            // In a real app, you would upload the image to a server
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const newMeal = {
+                    id: Date.now(),
+                    name: name,
+                    price: price,
+                    image: event.target.result
+                };
+                
+                appData.menu.push(newMeal);
+                saveAppData();
+                renderMenu();
+                
+                // Clear form
+                mealNameInput.value = '';
+                mealPriceInput.value = '';
+                mealImageInput.value = '';
+            };
+            reader.readAsDataURL(imageFile);
+        });
+        
+        clearMealBtn.addEventListener('click', () => {
+            mealNameInput.value = '';
+            mealPriceInput.value = '';
+            mealImageInput.value = '';
+        });
+        
+        // Edit and Delete meals
+        menuList.addEventListener('click', (e) => {
+            if (e.target.closest('.edit-meal')) {
+                const id = parseInt(e.target.closest('.edit-meal').getAttribute('data-id'));
+                const meal = appData.menu.find(m => m.id === id);
+                if (meal) {
+                    mealNameInput.value = meal.name;
+                    mealPriceInput.value = meal.price;
+                    // Note: Can't set file input value for security reasons
+                    
+                    // Remove the meal
+                    appData.menu = appData.menu.filter(m => m.id !== id);
+                    saveAppData();
+                    renderMenu();
+                }
+            } else if (e.target.closest('.delete-meal')) {
+                if (confirm('هل أنت متأكد من حذف هذه الوجبة؟')) {
+                    const id = parseInt(e.target.closest('.delete-meal').getAttribute('data-id'));
+                    appData.menu = appData.menu.filter(m => m.id !== id);
+                    saveAppData();
+                    renderMenu();
+                }
+            }
+        });
+        
+        // Customer Event Listeners
+        customerMenu.addEventListener('click', (e) => {
+            if (e.target.closest('.add-to-cart')) {
+                const id = parseInt(e.target.closest('.add-to-cart').getAttribute('data-id'));
+                const existingItem = cart.find(item => item.id === id);
+                
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({ id: id, quantity: 1 });
+                }
+                
+                updateCart();
+            }
+        });
+        
+        cartBtn.addEventListener('click', () => {
+            if (cart.length > 0) {
+                cartSection.classList.toggle('hidden');
+            }
+        });
+        
+        closeCart.addEventListener('click', () => {
+            cartSection.classList.add('hidden');
+        });
+        
+        cartItems.addEventListener('click', (e) => {
+            if (e.target.closest('.increase-quantity')) {
+                const id = parseInt(e.target.closest('.increase-quantity').getAttribute('data-id'));
+                const item = cart.find(item => item.id === id);
+                if (item) {
+                    item.quantity += 1;
+                    updateCart();
+                }
+            } else if (e.target.closest('.decrease-quantity')) {
+                const id = parseInt(e.target.closest('.decrease-quantity').getAttribute('data-id'));
+                const item = cart.find(item => item.id === id);
+                if (item) {
+                    item.quantity -= 1;
+                    if (item.quantity <= 0) {
+                        cart = cart.filter(i => i.id !== id);
+                    }
+                    updateCart();
+                }
+            }
+        });
+        
+        checkoutBtn.addEventListener('click', () => {
+            if (cart.length === 0) {
+                alert('السلة فارغة');
+                return;
+            }
+            
+            if (!appData.whatsappNumber) {
+                alert('لم يتم تعيين رقم واتساب للطلبات. الرجاء تسجيل الدخول كمسؤول لإضافة رقم.');
+                return;
+            }
+            
+            // Prepare order message
+            let message = `مرحباً، أريد طلب:\n\n`;
+            let total = 0;
+            
+            cart.forEach(item => {
+                const meal = appData.menu.find(m => m.id === item.id);
+                if (meal) {
+                    message += `${meal.name} - ${item.quantity} × ${meal.price} ر.س\n`;
+                    total += meal.price * item.quantity;
+                }
+            });
+            
+            message += `\nالمجموع: ${total} ر.س`;
+            
+            // Open WhatsApp
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${appData.whatsappNumber}?text=${encodedMessage}`, '_blank');
+            
+            // Clear cart
+            cart = [];
+            updateCart();
+            cartSection.classList.add('hidden');
+        });
+        
+        // Save App Data to localStorage
+        function saveAppData() {
+            localStorage.setItem('restaurantAppData', JSON.stringify(appData));
+        }
+        
+        // Initialize the app
+        initApp();
+    </script>
+</body>
+</html>
